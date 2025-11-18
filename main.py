@@ -5,6 +5,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 from config import BOT_TOKEN
 from scr.handlers import registration
+from scr.database.db import init_db, close_db
 
 logging.basicConfig(
     level=logging.INFO,
@@ -14,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 async def main():
+    await init_db()
+    
     bot = Bot(token=BOT_TOKEN)
     storage = MemoryStorage()
     dp = Dispatcher(storage=storage)
@@ -26,6 +29,7 @@ async def main():
         await bot.delete_webhook(drop_pending_updates=True)
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     finally:
+        await close_db()
         await bot.session.close()
 
 

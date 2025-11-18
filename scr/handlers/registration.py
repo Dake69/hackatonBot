@@ -12,11 +12,11 @@ router = Router()
 
 @router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
-    user = get_user(message.from_user.id)
+    user = await get_user(message.from_user.id)
     
     if user:
         await message.answer(
-            f"👋 Привіт, {user.full_name}!\n\n"
+            f"👋 Привіт, {user['full_name']}!\n\n"
             "Ви вже зареєстровані в системі."
         )
         return
@@ -157,14 +157,15 @@ async def process_team_size(message: Message, state: FSMContext):
     
     data = await state.get_data()
     
-    create_user(
+    await create_user(
         telegram_id=message.from_user.id,
+        username=message.from_user.username or "",
         full_name=data['fullname'],
         phone=data['phone'],
         is_captain=True
     )
     
-    team_id, team_code = create_team(data['team_name'], message.from_user.id, team_size)
+    team_id, team_code, unique_number = await create_team(data['team_name'], message.from_user.id, team_size)
     
     await message.answer(
         f"✅ Реєстрація успішна!\n\n"
@@ -172,6 +173,7 @@ async def process_team_size(message: Message, state: FSMContext):
         f"📱 Телефон: {data['phone']}\n"
         f"👑 Роль: Капітан команди\n\n"
         f"🎯 Команда '{data['team_name']}' створена!\n"
+        f"🔢 Унікальний номер: <code>{unique_number}</code>\n"
         f"👥 Кількість учасників: {team_size}\n"
         f"🔑 Код команди: <code>{team_code}</code>\n\n"
         f"Надішліть цей код учасникам вашої команди для приєднання.",
@@ -199,14 +201,15 @@ async def process_team_code(message: Message, state: FSMContext):
     team_code = message.text.strip().upper()
     data = await state.get_data()
     
-    create_user(
+    await create_user(
         telegram_id=message.from_user.id,
+        username=message.from_user.username or "",
         full_name=data['fullname'],
         phone=data['phone'],
         is_captain=False
     )
     
-    success, msg = join_team(message.from_user.id, team_code)
+    success, msg = await join_team(message.from_user.id, team_code)
     
     if success:
         await message.answer(
