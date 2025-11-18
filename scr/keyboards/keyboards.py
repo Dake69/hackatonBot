@@ -27,3 +27,11 @@ def get_cancel_keyboard():
 def remove_keyboard():
     from aiogram.types import ReplyKeyboardRemove
     return ReplyKeyboardRemove()
+
+
+def get_main_menu_keyboard():
+    kb = InlineKeyboardBuilder()
+    kb.button(text="📜 Регламент", url="https://docs.google.com/document/d/1VaSC_Gc7i1jSsX333Q1VY7-NllevVRT1bss2i6sLpYA/edit?usp=sharing")
+    kb.button(text="📝 Технічне завдання", url="https://docs.google.com/document/d/1M0xUlyMQSGlgt7gqPykxgIM4kKgpbqqYEt2k6sWaDHg/edit?usp=sharing")
+    kb.adjust(1)
+    return kb.as_markup()

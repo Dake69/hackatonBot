@@ -4,10 +4,34 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 
 from scr.FSM.states import RegistrationStates
-from scr.keyboards.keyboards import get_phone_keyboard, get_role_keyboard, get_cancel_keyboard, remove_keyboard
-from scr.database.models import create_user, create_team, join_team, get_user
+from scr.keyboards.keyboards import (
+    get_phone_keyboard, 
+    get_role_keyboard, 
+    get_cancel_keyboard, 
+    remove_keyboard,
+    get_main_menu_keyboard
+)
+from scr.database.__init__ import create_user, create_team, join_team, get_user
 
 router = Router()
+
+
+@router.message(Command("menu"))
+async def cmd_menu(message: Message):
+    user = await get_user(message.from_user.id)
+    
+    if not user:
+        await message.answer(
+            "❗️ Спочатку зареєструйтеся, використовуючи команду /start"
+        )
+        return
+    
+    await message.answer(
+        f"📋 Головне меню\n\n"
+        f"👤 {user['full_name']}\n"
+        f"{'👑 Капітан команди' if user.get('is_captain') else '👤 Учасник команди'}",
+        reply_markup=get_main_menu_keyboard()
+    )
 
 
 @router.message(CommandStart())
@@ -17,7 +41,8 @@ async def cmd_start(message: Message, state: FSMContext):
     if user:
         await message.answer(
             f"👋 Привіт, {user['full_name']}!\n\n"
-            "Ви вже зареєстровані в системі."
+            "Ви вже зареєстровані в системі.",
+            reply_markup=get_main_menu_keyboard()
         )
         return
     
@@ -178,7 +203,7 @@ async def process_team_size(message: Message, state: FSMContext):
         f"🔑 Код команди: <code>{team_code}</code>\n\n"
         f"Надішліть цей код учасникам вашої команди для приєднання.",
         parse_mode="HTML",
-        reply_markup=remove_keyboard()
+        reply_markup=get_main_menu_keyboard()
     )
     await state.clear()
 
@@ -218,7 +243,7 @@ async def process_team_code(message: Message, state: FSMContext):
             f"📱 Телефон: {data['phone']}\n"
             f"👤 Роль: Учасник команди\n\n"
             f"✅ {msg}",
-            reply_markup=remove_keyboard()
+            reply_markup=get_main_menu_keyboard()
         )
     else:
         await message.answer(
