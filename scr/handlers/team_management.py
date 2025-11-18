@@ -7,6 +7,7 @@ from scr.FSM.states import TeamManagementStates
 from scr.keyboards.keyboards import (
     get_team_management_keyboard,
     get_captain_menu_keyboard,
+    get_main_menu_keyboard,
     get_cancel_keyboard,
     remove_keyboard
 )
