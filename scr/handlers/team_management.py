@@ -36,11 +36,14 @@ async def show_team_management(callback: CallbackQuery):
         await callback.message.answer("❌ Ви не є капітаном жодної команди")
         return
     
-    await callback.message.edit_text(
-        "⚙️ Управління командою\n\n"
-        "Оберіть дію:",
-        reply_markup=get_team_management_keyboard()
-    )
+    try:
+        await callback.message.edit_text(
+            "⚙️ Управління командою\n\n"
+            "Оберіть дію:",
+            reply_markup=get_team_management_keyboard()
+        )
+    except Exception:
+        pass
 
 
 @router.callback_query(F.data == "back_to_menu")
@@ -48,13 +51,24 @@ async def back_to_menu(callback: CallbackQuery):
     await callback.answer()
     
     user = await get_user(callback.from_user.id)
+    team = await get_team_by_captain_id(callback.from_user.id) if user.get('is_captain') else None
     
-    await callback.message.edit_text(
-        f"📋 Головне меню\n\n"
-        f"👤 {user['full_name']}\n"
-        f"{'👑 Капітан команди' if user.get('is_captain') else '👤 Учасник команди'}",
-        reply_markup=get_captain_menu_keyboard() if user.get('is_captain') else None
-    )
+    if not team and user.get('is_captain'):
+        chat_link = None
+    elif team:
+        chat_link = team.get('chat_link')
+    else:
+        chat_link = None
+    
+    try:
+        await callback.message.edit_text(
+            f"📋 Головне меню\n\n"
+            f"👤 {user['full_name']}\n"
+            f"{'👑 Капітан команди' if user.get('is_captain') else '👤 Учасник команди'}",
+            reply_markup=get_captain_menu_keyboard(chat_link) if user.get('is_captain') else get_main_menu_keyboard(chat_link)
+        )
+    except Exception:
+        pass
 
 
 @router.callback_query(F.data == "team_info")
@@ -77,15 +91,25 @@ async def show_team_info(callback: CallbackQuery):
             username = f"@{user.get('username')}" if user.get('username') else "немає username"
             members_text += f"{i}. {user['full_name']} ({username}) - {role}\n"
     
-    await callback.message.edit_text(
+    chat_status = f"💬 Чат: {team.get('chat_link')}" if team.get('chat_link') else "💬 Чат: не встановлено"
+    
+    new_text = (
         f"📊 Інформація про команду\n\n"
         f"🎯 Назва: {team['name']}\n"
         f"🔢 Унікальний номер: {team['unique_number']}\n"
         f"🔑 Код: {team['code']}\n"
-        f"👥 Учасників: {members_count}/{team['max_members']}\n\n"
-        f"Список учасників:\n{members_text}",
-        reply_markup=get_team_management_keyboard()
+        f"👥 Учасників: {members_count}/{team['max_members']}\n"
+        f"{chat_status}\n\n"
+        f"Список учасників:\n{members_text}"
     )
+    
+    try:
+        await callback.message.edit_text(
+            new_text,
+            reply_markup=get_team_management_keyboard()
+        )
+    except Exception:
+        pass
 
 
 @router.callback_query(F.data == "edit_team_name")
@@ -132,6 +156,67 @@ async def process_new_team_name(message: Message, state: FSMContext):
         )
     else:
         await message.answer("❌ Помилка при зміні назви команди")
+    
+    await state.clear()
+
+
+@router.callback_query(F.data == "edit_chat_link")
+async def start_edit_chat_link(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+    
+    team = await get_team_by_captain_id(callback.from_user.id)
+    current_link = team.get('chat_link') if team else None
+    
+    current_text = f"Поточне посилання: {current_link}" if current_link else "Посилання ще не встановлено"
+    
+    await callback.message.answer(
+        f"💬 Введіть посилання на чат команди:\n\n"
+        f"{current_text}\n\n"
+        f"Приклад: https://t.me/your_group",
+        reply_markup=get_cancel_keyboard()
+    )
+    await state.set_state(TeamManagementStates.waiting_for_chat_link)
+
+
+@router.message(TeamManagementStates.waiting_for_chat_link, F.text == "❌ Скасувати")
+async def cancel_edit_chat_link(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer(
+        "❌ Зміну посилання скасовано",
+        reply_markup=remove_keyboard()
+    )
+
+
+@router.message(TeamManagementStates.waiting_for_chat_link)
+async def process_chat_link(message: Message, state: FSMContext):
+    if not message.text:
+        await message.answer("❗️ Введіть посилання на чат")
+        return
+    
+    chat_link = message.text.strip()
+    
+    if not chat_link.startswith(('http://', 'https://', 't.me/')):
+        await message.answer("❗️ Посилання має починатися з http://, https:// або t.me/")
+        return
+    
+    team = await get_team_by_captain_id(message.from_user.id)
+    
+    if not team:
+        await message.answer("❌ Команду не знайдено")
+        await state.clear()
+        return
+    
+    team_id = str(team['_id'])
+    success = await update_team_info(team_id, {'chat_link': chat_link})
+    
+    if success:
+        await message.answer(
+            f"✅ Посилання на чат команди оновлено!\n\n"
+            f"💬 {chat_link}",
+            reply_markup=remove_keyboard()
+        )
+    else:
+        await message.answer("❌ Помилка при оновленні посилання")
     
     await state.clear()
 

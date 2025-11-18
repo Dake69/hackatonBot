@@ -12,9 +12,24 @@ from scr.keyboards.keyboards import (
     get_main_menu_keyboard,
     get_captain_menu_keyboard
 )
-from scr.database.__init__ import create_user, create_team, join_team, get_user
+from scr.database.__init__ import create_user, create_team, join_team, get_user, get_team_by_captain_id, get_team_by_id, get_team_by_code, get_all_teams
 
 router = Router()
+
+
+async def get_user_team_chat_link(user):
+    """Отримати посилання на чат команди користувача"""
+    if user.get('is_captain'):
+        team = await get_team_by_captain_id(user['telegram_id'])
+    else:
+        all_teams = await get_all_teams()
+        team = None
+        for t in all_teams:
+            if user['telegram_id'] in t.get('members_telegram_ids', []):
+                team = t
+                break
+    
+    return team.get('chat_link') if team else None
 
 
 @router.message(Command("menu"))
@@ -27,11 +42,13 @@ async def cmd_menu(message: Message):
         )
         return
     
+    chat_link = await get_user_team_chat_link(user)
+    
     await message.answer(
         f"📋 Головне меню\n\n"
         f"👤 {user['full_name']}\n"
         f"{'👑 Капітан команди' if user.get('is_captain') else '👤 Учасник команди'}",
-        reply_markup=get_captain_menu_keyboard() if user.get('is_captain') else get_main_menu_keyboard()
+        reply_markup=get_captain_menu_keyboard(chat_link) if user.get('is_captain') else get_main_menu_keyboard(chat_link)
     )
 
 
@@ -40,7 +57,8 @@ async def cmd_start(message: Message, state: FSMContext):
     user = await get_user(message.from_user.id)
     
     if user:
-        menu_keyboard = get_captain_menu_keyboard() if user.get('is_captain') else get_main_menu_keyboard()
+        chat_link = await get_user_team_chat_link(user)
+        menu_keyboard = get_captain_menu_keyboard(chat_link) if user.get('is_captain') else get_main_menu_keyboard(chat_link)
         await message.answer(
             f"👋 Привіт, {user['full_name']}!\n\n"
             "Ви вже зареєстровані в системі.",
@@ -205,7 +223,7 @@ async def process_team_size(message: Message, state: FSMContext):
         f"🔑 Код команди: <code>{team_code}</code>\n\n"
         f"Надішліть цей код учасникам вашої команди для приєднання.",
         parse_mode="HTML",
-        reply_markup=get_captain_menu_keyboard()
+        reply_markup=get_captain_menu_keyboard(None)
     )
     await state.clear()
 
@@ -239,13 +257,16 @@ async def process_team_code(message: Message, state: FSMContext):
     success, msg = await join_team(message.from_user.id, team_code)
     
     if success:
+        team = await get_team_by_code(team_code)
+        chat_link = team.get('chat_link') if team else None
+        
         await message.answer(
             f"✅ Реєстрація успішна!\n\n"
             f"👤 ПІБ: {data['fullname']}\n"
             f"📱 Телефон: {data['phone']}\n"
             f"👤 Роль: Учасник команди\n\n"
             f"✅ {msg}",
-            reply_markup=get_main_menu_keyboard()
+            reply_markup=get_main_menu_keyboard(chat_link)
         )
     else:
         await message.answer(

@@ -32,7 +32,8 @@ async def create_team(name: str, captain_id: int, max_members: int = 6):
         'unique_number': unique_number,
         'captain_id': captain_id,
         'max_members': max_members,
-        'members_telegram_ids': [captain_id]
+        'members_telegram_ids': [captain_id],
+        'chat_link': None
     }
     
     result = await teams.insert_one(team)
