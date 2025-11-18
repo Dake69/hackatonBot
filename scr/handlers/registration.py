@@ -9,7 +9,8 @@ from scr.keyboards.keyboards import (
     get_role_keyboard, 
     get_cancel_keyboard, 
     remove_keyboard,
-    get_main_menu_keyboard
+    get_main_menu_keyboard,
+    get_captain_menu_keyboard
 )
 from scr.database.__init__ import create_user, create_team, join_team, get_user
 
@@ -30,7 +31,7 @@ async def cmd_menu(message: Message):
         f"📋 Головне меню\n\n"
         f"👤 {user['full_name']}\n"
         f"{'👑 Капітан команди' if user.get('is_captain') else '👤 Учасник команди'}",
-        reply_markup=get_main_menu_keyboard()
+        reply_markup=get_captain_menu_keyboard() if user.get('is_captain') else get_main_menu_keyboard()
     )
 
 
@@ -39,10 +40,11 @@ async def cmd_start(message: Message, state: FSMContext):
     user = await get_user(message.from_user.id)
     
     if user:
+        menu_keyboard = get_captain_menu_keyboard() if user.get('is_captain') else get_main_menu_keyboard()
         await message.answer(
             f"👋 Привіт, {user['full_name']}!\n\n"
             "Ви вже зареєстровані в системі.",
-            reply_markup=get_main_menu_keyboard()
+            reply_markup=menu_keyboard
         )
         return
     
@@ -203,7 +205,7 @@ async def process_team_size(message: Message, state: FSMContext):
         f"🔑 Код команди: <code>{team_code}</code>\n\n"
         f"Надішліть цей код учасникам вашої команди для приєднання.",
         parse_mode="HTML",
-        reply_markup=get_main_menu_keyboard()
+        reply_markup=get_captain_menu_keyboard()
     )
     await state.clear()
 

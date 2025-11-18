@@ -35,3 +35,23 @@ def get_main_menu_keyboard():
     kb.button(text="📝 Технічне завдання", url="https://docs.google.com/document/d/1M0xUlyMQSGlgt7gqPykxgIM4kKgpbqqYEt2k6sWaDHg/edit?usp=sharing")
     kb.adjust(1)
     return kb.as_markup()
+
+
+def get_captain_menu_keyboard():
+    kb = InlineKeyboardBuilder()
+    kb.button(text="📜 Регламент", url="https://docs.google.com/document/d/1VaSC_Gc7i1jSsX333Q1VY7-NllevVRT1bss2i6sLpYA/edit?usp=sharing")
+    kb.button(text="📝 Технічне завдання", url="https://docs.google.com/document/d/1M0xUlyMQSGlgt7gqPykxgIM4kKgpbqqYEt2k6sWaDHg/edit?usp=sharing")
+    kb.button(text="⚙️ Управління командою", callback_data="manage_team")
+    kb.adjust(1)
+    return kb.as_markup()
+
+
+def get_team_management_keyboard():
+    kb = InlineKeyboardBuilder()
+    kb.button(text="✏️ Змінити назву команди", callback_data="edit_team_name")
+    kb.button(text="👥 Змінити кількість учасників", callback_data="edit_team_size")
+    kb.button(text="👤 Видалити учасника", callback_data="remove_member")
+    kb.button(text="📊 Інформація про команду", callback_data="team_info")
+    kb.button(text="🔙 Назад", callback_data="back_to_menu")
+    kb.adjust(1)
+    return kb.as_markup()

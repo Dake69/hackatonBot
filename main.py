@@ -4,7 +4,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from config import BOT_TOKEN
-from scr.handlers import registration
+from scr.handlers import registration, team_management
 from scr.database.db import init_db, close_db
 
 logging.basicConfig(
@@ -22,6 +22,7 @@ async def main():
     dp = Dispatcher(storage=storage)
     
     registration.register_handlers(dp)
+    team_management.register_handlers(dp)
     
     logger.info("Бот запущено!")
     

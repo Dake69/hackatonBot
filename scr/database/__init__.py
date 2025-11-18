@@ -1,6 +1,7 @@
 from scr.database.users import (
     create_user,
     get_user_by_telegram_id as get_user,
+    get_user_by_telegram_id,
     get_all_users,
     update_user_team,
     get_users_by_team_id,
