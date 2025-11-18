@@ -16,7 +16,8 @@ from scr.database.__init__ import (
     get_team_members_ids,
     update_team_info,
     remove_member_from_team,
-    get_user_by_telegram_id
+    get_user_by_telegram_id,
+    get_all_teams
 )
 
 router = Router()
@@ -51,14 +52,18 @@ async def back_to_menu(callback: CallbackQuery):
     await callback.answer()
     
     user = await get_user(callback.from_user.id)
-    team = await get_team_by_captain_id(callback.from_user.id) if user.get('is_captain') else None
     
-    if not team and user.get('is_captain'):
-        chat_link = None
-    elif team:
-        chat_link = team.get('chat_link')
+    if user.get('is_captain'):
+        team = await get_team_by_captain_id(callback.from_user.id)
     else:
-        chat_link = None
+        all_teams = await get_all_teams()
+        team = None
+        for t in all_teams:
+            if user['telegram_id'] in t.get('members_telegram_ids', []):
+                team = t
+                break
+    
+    chat_link = team.get('chat_link') if team else None
     
     try:
         await callback.message.edit_text(
