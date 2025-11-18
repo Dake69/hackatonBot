@@ -27,6 +27,7 @@ class Team(Base):
     name = Column(String(255), nullable=False)
     code = Column(String(10), unique=True, nullable=False)
     captain_id = Column(BigInteger, nullable=False)
+    max_members = Column(Integer, nullable=False, default=6)
     
     members = relationship("User", back_populates="team")
 
@@ -59,7 +60,7 @@ def create_user(telegram_id, full_name, phone, is_captain=False):
     return user_id
 
 
-def create_team(name, captain_id):
+def create_team(name, captain_id, max_members=6):
     session = get_session()
     
     while True:
@@ -71,7 +72,8 @@ def create_team(name, captain_id):
     team = Team(
         name=name,
         code=code,
-        captain_id=captain_id
+        captain_id=captain_id,
+        max_members=max_members
     )
     session.add(team)
     session.commit()
@@ -103,6 +105,11 @@ def join_team(telegram_id, team_code):
     if user.team_id:
         session.close()
         return False, "Ви вже є в команді"
+    
+    current_members = session.query(User).filter_by(team_id=team.id).count()
+    if current_members >= team.max_members:
+        session.close()
+        return False, f"Команда вже заповнена ({team.max_members} учасників)"
     
     user.team_id = team.id
     session.commit()

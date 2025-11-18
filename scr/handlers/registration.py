@@ -126,6 +126,35 @@ async def process_team_name(message: Message, state: FSMContext):
         return
     
     team_name = message.text.strip()
+    await state.update_data(team_name=team_name)
+    
+    await message.answer(
+        "👥 Вкажіть кількість учасників у вашій команді (від 1 до 6):",
+        reply_markup=get_cancel_keyboard()
+    )
+    await state.set_state(RegistrationStates.waiting_for_team_size)
+
+
+@router.message(RegistrationStates.waiting_for_team_size, F.text == "❌ Скасувати")
+async def cancel_team_size(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer(
+        "❌ Реєстрацію скасовано.",
+        reply_markup=remove_keyboard()
+    )
+
+
+@router.message(RegistrationStates.waiting_for_team_size)
+async def process_team_size(message: Message, state: FSMContext):
+    if not message.text or not message.text.isdigit():
+        await message.answer("❗️ Будь ласка, введіть число від 1 до 6:")
+        return
+    
+    team_size = int(message.text)
+    if team_size < 1 or team_size > 6:
+        await message.answer("❗️ Кількість учасників має бути від 1 до 6:")
+        return
+    
     data = await state.get_data()
     
     create_user(
@@ -135,14 +164,15 @@ async def process_team_name(message: Message, state: FSMContext):
         is_captain=True
     )
     
-    team_id, team_code = create_team(team_name, message.from_user.id)
+    team_id, team_code = create_team(data['team_name'], message.from_user.id, team_size)
     
     await message.answer(
         f"✅ Реєстрація успішна!\n\n"
         f"👤 ПІБ: {data['fullname']}\n"
         f"📱 Телефон: {data['phone']}\n"
         f"👑 Роль: Капітан команди\n\n"
-        f"🎯 Команда '{team_name}' створена!\n"
+        f"🎯 Команда '{data['team_name']}' створена!\n"
+        f"👥 Кількість учасників: {team_size}\n"
         f"🔑 Код команди: <code>{team_code}</code>\n\n"
         f"Надішліть цей код учасникам вашої команди для приєднання.",
         parse_mode="HTML",

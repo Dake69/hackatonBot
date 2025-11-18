@@ -6,4 +6,5 @@ class RegistrationStates(StatesGroup):
     waiting_for_phone = State()
     waiting_for_role = State()
     waiting_for_team_name = State()
+    waiting_for_team_size = State()
     waiting_for_team_code = State()
