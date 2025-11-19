@@ -5,6 +5,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 from config import BOT_TOKEN
 from scr.handlers import registration, team_management
+from scr.handlers.admin import admin
 from scr.database.db import init_db, close_db
 
 logging.basicConfig(
@@ -23,6 +24,7 @@ async def main():
     
     registration.register_handlers(dp)
     team_management.register_handlers(dp)
+    admin.register_handlers(dp)
     
     logger.info("Бот запущено!")
     

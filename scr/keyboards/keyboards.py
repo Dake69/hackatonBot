@@ -60,3 +60,14 @@ def get_team_management_keyboard():
     kb.button(text="🔙 Назад", callback_data="back_to_menu")
     kb.adjust(1)
     return kb.as_markup()
+
+def get_admin_keyboard():
+    kb = InlineKeyboardBuilder()
+    
+    kb.button(text="📊 Список всіх користувачів", callback_data="get_all_users")
+    kb.button(text="👑 Список всіх капітанів", callback_data="get_all_captains")
+    kb.button(text="🗑 Видалити учасника", callback_data="delete_user")
+    kb.button(text="📂 Список всіх команд", callback_data="get_all_teams")
+
+    kb.adjust(1) 
+    return kb.as_markup()
